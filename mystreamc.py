@@ -1,9 +1,11 @@
-import sys
-import random
-from sympy import FiniteField, S
+"""
+This is a python port of the C code in streamc
+"""
 
-usage: str = """
-Usage: ./programName snum arrival repfreq epsilon Tp irange pos1 pos2 ... 
+import sys
+import model
+
+USAGE = """Usage: ./programName snum arrival repfreq epsilon Tp irange pos1 pos2 ... 
                        snum     - maximum number of source packets to transmit
                        arrival  - Bernoulli arrival rate at the sending queue, value: [0, 1)
                                   0 - all source packets available before time 0
@@ -13,19 +15,13 @@ Usage: ./programName snum arrival repfreq epsilon Tp irange pos1 pos2 ...
                        epsilon  - erasure probability of the end-to-end link
                        Tp       - propagation delay of channel
                        irange   - period of the irregular pattern (0: regular or random depending on repfreq)
-                       posX     - positions sending source packets in the irregular range
-"""
-
-class Encoder:
-    def __init__(self, cp) -> None:
-        self.cp = cp
-        self.count = 0
-        self.nextsid = 0
-        self.rcount = 0
+                       posX     - positions sending source packets in the irregular range"""
+FILE = "/dev/urandom" # Binary Input Stream
+PKTSIZE = 200
 
 def main():
     if len(sys.argv) < 7:
-        print(usage)
+        print(USAGE)
         sys.exit(1)
     snum = int(sys.argv[1])
     arrival = float(sys.argv[2])
@@ -34,8 +30,25 @@ def main():
     T_P = int(sys.argv[5])
     irreg_range = int(sys.argv[6])
     irreg_pos = [int(sys.argv[i]) for i in range(7, len(sys.argv))]
-    
+
+    urandom = open(FILE, "rb")
+    data = urandom.read(snum * PKTSIZE)
+
     queue: list[int] = []
     feedback: list[int] = []
 
-    # TODO Create Encoder, Decoder
+    ec = model.Encoder(PKTSIZE)
+    dc = model.Decoder()
+
+    if arrival == 0:
+        for i in range(snum):
+            ec.enqueue_packet(data[i * PKTSIZE:(i + 1) * PKTSIZE])
+
+    print(ec.output_source_packet())
+    print(ec.output_repair_packet(3, 7))
+    print(ec.output_source_packet())
+    print(ec.output_source_packet())
+
+
+if __name__ == "__main__":
+    main()
