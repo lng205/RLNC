@@ -1,5 +1,7 @@
 """
-This is a python port of the C code in streamc
+This is a python port of the C code in streamc. The porting would strive to maintain the same structure as the C code.
+Streamc is a stream network coding simulator.
+The C code is written in a object-oriented style with structs and functions. The python code would be written in a class-based style.
 """
 
 import sys
@@ -20,6 +22,9 @@ FILE = "/dev/urandom" # Binary Input Stream
 PKTSIZE = 200
 
 def main():
+    """
+    TestBernoulliFull
+    """
     if len(sys.argv) < 7:
         print(USAGE)
         sys.exit(1)
