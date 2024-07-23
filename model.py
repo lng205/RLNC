@@ -17,13 +17,24 @@ class Packet:
     coes: encoding coefficients
     syms: source or coded symbols
     """
-    def __init__(self, sourceid, repairid, win_s=None, win_e=None, coes=None, syms=None) -> None:
-        self.sourceid = sourceid
-        self.repairid = repairid
-        self.win_s = win_s
-        self.win_e = win_e
-        self.coes: list[bytes] = coes
-        self.syms: list[bytes] = syms
+    def __init__(self, sourceid, repairid, win_s=0, win_e=0, coes=b'', syms=b'') -> None:
+        self.sourceid: int = sourceid
+        self.repairid: int = repairid
+        self.win_s: int = win_s
+        self.win_e: int = win_e
+        self.coes: bytes = coes
+        self.syms: bytes = syms
+
+    def serialize(self) -> bytes:
+        """
+        MTU of Ethernet is 1500 Bytes
+        coe is generated at the decoder using the same random seed (Doesn't support recoding)
+        """
+        sourceid = self.sourceid.to_bytes(4, byteorder="big", signed=True)
+        repairid = self.repairid.to_bytes(4, byteorder="big", signed=True)
+        win_s = self.win_s.to_bytes(4, byteorder="big", signed=True)
+        win_e = self.win_e.to_bytes(4, byteorder="big", signed=True)
+        return sourceid + repairid + win_s + win_e + self.syms
 
     def __str__(self) -> str:
         syms = " ".join(f"{byte:02x}" for byte in self.syms)
@@ -46,9 +57,9 @@ class Encoder:
         self.count = 0
         self.nextsid = 0
         self.rcount = 0
-        self.srcpkt: list[list[bytes]] = []
+        self.srcpkt: list[bytes] = []
 
-    def enqueue_packet(self, syms: list[bytes]) -> None:
+    def enqueue_packet(self, syms: bytes) -> None:
         self.srcpkt.append(syms)
 
     def output_source_packet(self) -> Packet:
@@ -58,7 +69,11 @@ class Encoder:
         return packet
 
     def output_repair_packet(self, win_s, win_e) -> Packet:
+        repairid = self.rcount
+
+        random.seed(repairid)
         coes = [random.randint(0, 255) for _ in range(win_e - win_s)]
+
         syms = []
         for i in range(self.packet_size):
             sym = GF(0)
@@ -67,8 +82,10 @@ class Encoder:
                 coe = GF(coes[j - win_s])
                 sym += src * coe
             syms.append(int(sym))
-        packet = Packet(-1, self.rcount, win_s=win_s, win_e=win_e, coes=bytes(coes), syms=bytes(syms))
+
+        packet = Packet(-1, repairid, win_s=win_s, win_e=win_e, coes=bytes(coes), syms=bytes(syms))
         self.rcount += 1
+
         return packet
 
     def flush_acked_packets(self, ack_sid) -> None:
@@ -76,4 +93,27 @@ class Encoder:
 
 
 class Decoder:
-    pass
+    def __init__(self, packet_size) -> None:
+        self.activate = 0
+        self.packet_size = packet_size
+        self.inorder = -1
+        self.win_s = -1
+        self.win_e = -1
+        self.dof = 0
+        self.row = []
+        self.message = []
+        self.recovered = []
+        self.prev_rep = -1
+
+    def deserialize_packet(self, packet: bytes) -> Packet:
+        sourceid = int.from_bytes(packet[:4], byteorder="big", signed=True)
+        repairid = int.from_bytes(packet[4:8], byteorder="big", signed=True)
+        win_s = int.from_bytes(packet[8:12], byteorder="big", signed=True)
+        win_e = int.from_bytes(packet[12:16], byteorder="big", signed=True)
+
+        random.seed(repairid)
+        coes = [random.randint(0, 255) for _ in range(win_e - win_s)]
+
+        syms = packet[16:]
+
+        return Packet(sourceid, repairid, win_s, win_e, bytes(coes), syms)

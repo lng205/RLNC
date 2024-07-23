@@ -38,7 +38,7 @@ def main():
     feedback: list[int] = []
 
     ec = model.Encoder(PKTSIZE)
-    dc = model.Decoder()
+    dc = model.Decoder(PKTSIZE)
 
     if arrival == 0:
         for i in range(snum):
@@ -48,6 +48,11 @@ def main():
     print(ec.output_repair_packet(3, 7))
     print(ec.output_source_packet())
     print(ec.output_source_packet())
+
+    repair_packet = ec.output_repair_packet(0, 4)
+    print(repair_packet)
+    data = repair_packet.serialize()
+    print(dc.deserialize_packet(data))
 
 
 if __name__ == "__main__":
