@@ -17,7 +17,9 @@ Stream Coding is an algorithm based on erasure codes (e.g., RS, LDPC, Raptor, RL
 
 ## Usage
 
-- **Debug Configuration**: A debug configuration for VSCode is provided in `.vscode/launch.json`.
-- **Running the Script**: Execute `python3 mystreamc.py` to see the script's usage instructions.
+Execute `pip install -r requirements.txt` to install the required dependencies.
+
+- A debug configuration for VSCode is provided in `.vscode/launch.json`.
+- Execute `python3 mystreamc.py` to see the script's usage instructions.
 
 Feel free to explore the code and contribute feedback or improvements!
