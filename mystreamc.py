@@ -5,7 +5,8 @@ The C code is written in a object-oriented style with structs and functions. The
 """
 
 import sys
-import model
+from encoder import Encoder
+from decoder import Decoder
 
 USAGE = """Usage: ./programName snum arrival repfreq epsilon Tp irange pos1 pos2 ... 
                        snum     - maximum number of source packets to transmit
@@ -34,16 +35,15 @@ def main():
     pe = float(sys.argv[4])
     T_P = int(sys.argv[5])
     irreg_range = int(sys.argv[6])
-    irreg_pos = [int(sys.argv[i]) for i in range(7, len(sys.argv))]
+    irreg_pos = [int(arg) for arg in sys.argv[7:]]
 
-    urandom = open(FILE, "rb")
-    data = urandom.read(snum * PKTSIZE)
+    data = open(FILE, "rb").read(snum * PKTSIZE)
 
     queue: list[int] = []
     feedback: list[int] = []
 
-    ec = model.Encoder(PKTSIZE)
-    dc = model.Decoder(PKTSIZE)
+    ec = Encoder(PKTSIZE)
+    dc = Decoder(PKTSIZE)
 
     if arrival == 0:
         for i in range(snum):
