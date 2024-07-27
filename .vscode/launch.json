@@ -8,7 +8,7 @@
             "name": "debug my streamc",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/mystreamc.py",
+            "program": "${workspaceFolder}/code/mystreamc.py",
             "console": "integratedTerminal",
             "args": ["100", "0", "0.1", "0.2", "2", "0", "0"]
         }
