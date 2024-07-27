@@ -1,6 +1,5 @@
 """
-The paper "LOW-COMPLEXITY STREAMING FEC FOR NTNs" clearly illustrates the decoding algorithm,
-especially the figure 2.
+Figure 2 in the paper clearly illustrates the decoding algorithm
 """
 import random
 import mygalois
@@ -165,6 +164,7 @@ class Decoder:
         for i in range(width):
             if coes[i] != 0:
                 if self.row[index + i] is not None:
+                    # This row already exists. Subtract the row from the packet, and leave A unchanged.
                     quotient = mygalois.divide(coes[i], self.row[index + i][0])
                     mygalois.multiply_add_region(coes[i], self.row[index + i], quotient)
                     mygalois.multiply_add_region(pkt.syms, self.message[index + i], quotient)
