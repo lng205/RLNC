@@ -23,3 +23,14 @@ Execute `pip install -r requirements.txt` to install the required dependencies.
 - Execute `python3 code/mystreamc.py` to see the script's usage instructions.
 
 Feel free to explore the code and contribute feedback or improvements!
+
+## Roadmap
+
+1. A direct port of the original C code
+    - [x] Encoder
+    - [ ] Decoder
+    - [ ] Example-TestBernoulliFull
+
+2. Further improvements
+    - [ ] Use numpy for matrix operations (Module `galois` is compatible with numpy)
+    - [ ] Improve the code structure and readability
