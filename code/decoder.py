@@ -184,5 +184,33 @@ class Decoder:
         width = self.win_e - self.win_s + 1
         # eliminate all nonzeros above diagonal elements from right to left
         for i in range(width-1, -1, -1):
+            # i th column
             for j in range(0, i):
-                pass
+                # j th row
+                if j + len(self.row[j]) <= i or self.row[j][i-j] == 0:
+                    continue
+                # c_j - a_ji / a_ii
+                quotient = mygalois.divide(self.row[j][i-j], self.row[i][0])
+                mygalois.multiply_add_region(self.message[j], self.message[i], quotient)
+                self.row[j][i-j] = 0
+            
+            # convert diagonal to 1
+            if self.row[i][0] != 1:
+                quotient = mygalois.divide(1, self.row[i][0])
+                mygalois.multiply_region(self.message[i], quotient)
+                self.row[i][0] = 1
+            
+            # save recovered packet
+            self.recovered[self.win_s + i] = self.message[i]
+
+            self.message[i] = None
+            self.row[i] = None
+        
+        print(f"[Decoder] Inactivating decoder with DW window [{self.win_s}, {self.win_e}] of width: {width}, new in-order: {self.win_e}, n_repair: {self.n_repair}, n_sub_row_ops: {self.n_row_sub_ops}")
+        self.n_repair = 0
+        self.n_row_sub_ops = 0
+        self.inorder = self.win_e
+        self.dof = 0
+        self.win_s = -1
+        self.win_e = -1
+        self.active = 0

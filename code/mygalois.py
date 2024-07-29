@@ -13,3 +13,11 @@ def multiply_add_region(dst: bytearray, src: bytearray, coe: int) -> None:
 def divide(a: bytes, b: bytes) -> int:
     quotient = GF(int(a)) / GF(int(b))
     return int(quotient)
+
+def multiply_region(src: bytearray, multiplier: int) -> None:
+    """
+    Multiply a Vector by a constant.
+    D = cS
+    """
+    for i in range(len(src)):
+        src[i] = GF(int(src[i])) * GF(multiplier)
