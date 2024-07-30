@@ -4,8 +4,15 @@ GREEN = "\033[32m"
 YELLOW = "\033[33m"
 RESET = "\033[0m"
 
+class Cp:
+    def __init__(self, gfpower, pktsize, repfreq, seed=None) -> None:
+        self.gfpower = gfpower
+        self.pktsize = pktsize
+        self.repfreq = repfreq
+        self.seed = seed
+
 class Packet:
-    def __init__(self, sourceid, repairid, win_s=0, win_e=0, coes=b'', syms=b'') -> None:
+    def __init__(self, sourceid, repairid, win_s=0, win_e=0, coes=bytearray(), syms=bytearray()) -> None:
         """
         sourceid: source packet id
         repairid: repair packet id, -1 if source packet
@@ -18,8 +25,8 @@ class Packet:
         self.repairid: int = repairid
         self.win_s: int = win_s
         self.win_e: int = win_e
-        self.coes: bytes = coes
-        self.syms: bytes = syms
+        self.coes: bytearray = coes
+        self.syms: bytearray = syms
 
     def serialize(self) -> bytes:
         """
@@ -31,7 +38,7 @@ class Packet:
         repairid = self.repairid.to_bytes(4, byteorder="big", signed=True)
         win_s = self.win_s.to_bytes(4, byteorder="big", signed=True)
         win_e = self.win_e.to_bytes(4, byteorder="big", signed=True)
-        return sourceid + repairid + win_s + win_e + self.syms
+        return bytearray(sourceid + repairid + win_s + win_e + self.syms)
 
     def __str__(self) -> str:
         syms = " ".join(f"{byte:02x}" for byte in self.syms)

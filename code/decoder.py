@@ -8,9 +8,9 @@ from model import Packet
 WIN_ALLOC = 10000
 
 class Decoder:
-    def __init__(self, pktsize) -> None:
+    def __init__(self, cp) -> None:
         self.active = 0
-        self.pktsize = pktsize
+        self.cp = cp
         self.inorder = -1
         self.win_s = -1
         self.win_e = -1
@@ -28,7 +28,7 @@ class Decoder:
         random.seed(repairid)
         coes = [random.randint(0, 255) for _ in range(win_e - win_s)]
         syms = packet[16:]
-        return Packet(sourceid, repairid, win_s, win_e, bytes(coes), syms)
+        return Packet(sourceid, repairid, win_s, win_e, bytearray(coes), syms)
 
     def receive_packet(self, pkt: Packet) -> None:
         if pkt.repairid == -1:
