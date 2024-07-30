@@ -5,12 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "debug my streamc",
+            "name": "debug mystreamc",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/mystreamc.py",
             "console": "integratedTerminal",
-            "args": ["100", "0", "0.1", "0.2", "2", "0", "0"]
+            "args": ["100", "0.1", "0.2", "2"]
         }
     ]
 }
