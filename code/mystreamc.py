@@ -29,8 +29,8 @@ def main():
     with open(FILE, "rb") as f:
         data = f.read(datasize)
 
-    ec = Encoder(PKTSIZE, repfreq)
-    dc = Decoder(PKTSIZE, repfreq)
+    ec = Encoder(repfreq)
+    dc = Decoder()
 
     for i in range(snum):
         ec.enqueue(data[i*PKTSIZE:(i+1)*PKTSIZE])

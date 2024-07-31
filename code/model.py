@@ -34,25 +34,20 @@ class Packet:
         repairid = int.from_bytes(data[4:8], byteorder="big", signed=True)
         win_s = int.from_bytes(data[8:12], byteorder="big", signed=True)
         win_e = int.from_bytes(data[12:16], byteorder="big", signed=True)
-        if sourceid == -1:
-            coes = GF.Random(win_e-win_s, seed=repairid).reshape(1, -1)
-        else:
-            coes = None
+        coes = GF.Random(win_e - win_s, seed=repairid) if sourceid == -1 else None
         syms = GF(list(data[16:]))
         return cls(sourceid, repairid, win_s, win_e, coes, syms)
 
 
 class Encoder:
-    def __init__(self, pktsize, repfreq):
-        self.pktsize = pktsize
+    def __init__(self, repfreq: int):
         self.repfreq = repfreq
-        self.srcpkt = []
-        self.count = 0
-        self.nextsid = 0
-        self.rcount = 0
-        self.headsid = 0
+        self.srcpkt: list[bytes] = []
+        self.nextsid: int = 0
+        self.acksid: int = 0
+        self.rcount: int = 0
 
-    def enqueue(self, data):
+    def enqueue(self, data: bytes):
         self.srcpkt.append(data)
 
     def generate_packet(self):
@@ -62,36 +57,30 @@ class Encoder:
             return self.output_source_packet()
 
     def output_source_packet(self):
-        syms = GF(list(self.srcpkt[self.nextsid]))
-        pkt = Packet(self.nextsid, -1, -1, -1, None, syms)
-
-        self.count += 1
         self.nextsid += 1
-        return pkt
+        syms = GF(list(self.srcpkt[self.nextsid]))
+        return Packet(self.nextsid, -1, -1, -1, None, syms)
 
     def output_repair_packet(self):
-        win_s = self.headsid
+        """The encoding window is [acksid+1, nextsid)."""
+        self.rcount += 1
+
+        win_s = self.acksid + 1
         win_e = self.nextsid
         repairid = self.rcount
 
         coes = GF.Random(win_e-win_s, seed=repairid).reshape(1, -1)
         syms_all = GF([list(row) for row in self.srcpkt[win_s:win_e]])
         syms = coes @ syms_all
-        pkt = Packet(-1, repairid, win_s, win_e, coes, syms)
+        return Packet(-1, repairid, win_s, win_e, coes, syms)
 
-        self.count += 1
-        self.rcount += 1
-        return pkt
-
-    def flush_acked_packets(self, ack_sid):
-        if ack_sid >= self.headsid:
-            self.headsid = ack_sid + 1
+    def flush_acked_packets(self, acksid: int) -> None:
+        if acksid > self.acksid:
+            self.acksid = acksid
 
 
 class Decoder:
-    def __init__(self, pktsize, repfreq):
-        self.pktsize = pktsize
-        self.repfreq = repfreq
+    def __init__(self):
         self.inorder = -1
         self.recovered:list[galois.FieldArray] = []
         self.active = False
