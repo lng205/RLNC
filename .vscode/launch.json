@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/code/mystreamc.py",
             "console": "integratedTerminal",
-            "args": ["100", "0.1", "0.2", "2"]
+            "args": ["100", "0.3", "0.2", "2"]
         }
     ]
 }

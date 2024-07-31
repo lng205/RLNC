@@ -21,7 +21,6 @@ def main():
     epsilon = float(sys.argv[3])
     Tp = int(sys.argv[4])
 
-    Tack = 1
     slot = -1
     queue = [None] * (Tp+1)
     feedback = [None] * (Tp+1)
@@ -33,22 +32,12 @@ def main():
     ec = Encoder(PKTSIZE, repfreq)
     dc = Decoder(PKTSIZE, repfreq)
 
-    arrival_time = [0] * snum
-    sent_time = [0] * snum
-
-    # Enqueue all source packets
     for i in range(snum):
         ec.enqueue(data[i*PKTSIZE:(i+1)*PKTSIZE])
-        arrival_time[i] = slot
 
     while dc.inorder < snum-1:
         slot += 1
-
-        pkt = ec.generate_packet()
-        if pkt is None:
-            continue
-
-        pktstr = pkt.serialize()
+        pktstr = ec.generate_packet().serialize()
 
         pos1 = slot % (Tp+1)
         if random.random() < epsilon:
@@ -62,20 +51,19 @@ def main():
             dc.receive_packet(rpkt)
             queue[pos2] = None
 
-        if dc.inorder >= 0 and slot >= Tp and slot % Tack == 0:
+        if dc.inorder >= 0 and slot >= Tp:
             feedback[pos1] = dc.inorder
-            if slot >= Tp and feedback[pos2] != -1:
+            if slot >= Tp and feedback[pos2] is not None:
                 ec.flush_acked_packets(feedback[pos2])
-                feedback[pos2] = -1
+                feedback[pos2] = None
 
     correct = True
     for i in range(snum):
-        if data[i*PKTSIZE:(i+1)*PKTSIZE] != dc.recovered[i]:
+        if data[i*PKTSIZE:(i+1)*PKTSIZE] != dc.recovered[i].tobytes():
             correct = False
             print()
     if correct:
         print()
-
 
 if __name__ == "__main__":
     main()
