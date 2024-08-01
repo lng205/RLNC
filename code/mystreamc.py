@@ -43,21 +43,21 @@ def main():
         pkt = ec.generate_packet()
         if random.random() < epsilon:
             queue[pos1] = None
-            print(f"[Channel]   Packet at slot {slot} is lost")
         else:
             queue[pos1] = pkt.serialize()
-            print(f"[Channel]   {str(pkt)} is sent")
 
         # delayed receiving
         pos2 = (slot-Tp) % (Tp+1)
-        if queue[pos2] is not None:
+        if queue[pos2] is None:
+            print(f"{YELLOW}[Channel] Packet at time slot {slot} is lost{END}")
+        else:
+            print(f"[Decoder] {str(pkt)} Received")
             dc.receive_packet(Packet.deserialize(queue[pos2]))
             queue[pos2] = None
 
         # lossless feedback
         if dc.inorder >= 0 and slot >= Tp:
             feedback[pos1] = dc.inorder
-            print(f"[Feedback]  Acknowledgement for {feedback[pos1]} is sent")
             if slot >= Tp and feedback[pos2] is not None:
                 ec.flush_acked_packets(feedback[pos2])
                 feedback[pos2] = None
@@ -67,9 +67,16 @@ def main():
     for i in range(snum):
         if data[i*PKTSIZE:(i+1)*PKTSIZE] != dc.recovered[i].tobytes():
             correct = False
-            print(f"[Summary]   Source packet {i} is not identical to the original")
+            print(f"{RED}Source packet {i} is not identical to the original{END}")
     if correct:
-        print("[Summary]    All source packets are recovered correctly")
+        print(f"{GREEN}All source packets are recovered correctly{END}")
+        print(f"Total time slots: {slot+1}")
+
+# ascii color codes
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+END = "\033[0m"
 
 if __name__ == "__main__":
     main()
