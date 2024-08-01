@@ -63,7 +63,7 @@ def main():
             correct = False
             print()
     if correct:
-        print()
+        print("[Summary] All source packets are recovered correctly")
 
 if __name__ == "__main__":
     main()

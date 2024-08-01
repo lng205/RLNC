@@ -44,14 +44,15 @@ class Encoder:
         self.repfreq = repfreq
         self.srcpkt: list[bytes] = []
         self.nextsid: int = 0
-        self.acksid: int = 0
+        self.acksid: int = -1
         self.rcount: int = 0
 
     def enqueue(self, data: bytes):
         self.srcpkt.append(data)
 
     def generate_packet(self):
-        if self.nextsid >= len(self.srcpkt) or random.random() < self.repfreq:
+        if self.nextsid + 1 >= len(self.srcpkt) or \
+            random.random() < self.repfreq:
             return self.output_repair_packet()
         else:
             return self.output_source_packet()
@@ -124,21 +125,23 @@ class Decoder:
                 self.win_e = pkt.sourceid + 1
             pad_left = pkt.sourceid - self.win_s
             pad_right = self.win_e - pkt.sourceid - 1
-            coes = GF(np.pad([1], (pad_left, pad_right)))
+            coes = GF(np.pad([[1]], ((0, 0), (pad_left, pad_right))))
             syms = pkt.syms
         else:
-            coes = pkt.coes
+            coes = pkt.coes.reshape(1, -1)
             syms = pkt.syms
             width = self.win_s - pkt.win_s
             if width > 0:
-                syms -= GF(coes[:width]) @ GF(self.recovered[pkt.win_s:self.win_s])
-                coes = coes[width:]
+                A = coes[:, :width]
+                B = self.recovered[pkt.win_s:self.win_s]
+                syms = syms - (GF(A) @ GF(B)).reshape(-1)
+                coes = coes[:, width:]
 
             if pkt.win_e > self.win_e:
-                self.coes = GF(np.pad(self.coes, ((0, pkt.win_e-self.win_e), (0, 0))))
+                self.coes = GF(np.pad(self.coes, ((0, 0), (0, pkt.win_e-self.win_e))))
                 self.win_e = pkt.win_e
             elif pkt.win_e < self.win_e:
-                coes = GF(np.pad(coes, ((0, self.win_e-pkt.win_e), (0, 0))))
+                coes = GF(np.pad(coes, ((0, 0), (0, self.win_e-pkt.win_e))))
 
         coes_new = GF(np.vstack((self.coes, coes)))
         if np.linalg.matrix_rank(coes_new) == coes_new.shape[0]:
@@ -149,10 +152,12 @@ class Decoder:
             self.deactivate()
 
     def deactivate(self) -> None:
+        decoded = np.linalg.inv(self.coes) @ self.messages
+        for row in decoded:
+            self.recovered.append(row)
+        self.inorder = len(self.recovered) - 1
         self.active = False
         self.win_s = -1
         self.win_e = -1
         self.coes = None
         self.messages = None
-        self.recovered.append(self.messages @ np.linalg.inv(self.coes))
-        self.inorder = len(self.recovered) - 1
