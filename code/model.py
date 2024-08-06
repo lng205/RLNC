@@ -1,7 +1,63 @@
 import random
 import galois
+from typing import Union
 import numpy as np
 GF = galois.GF(2**8)
+
+
+class Queue:
+    """A queue datastructure implementation using a circular buffer."""
+    def __init__(self, capacity=1024):
+        self.capacity = capacity
+        self.data = [None] * capacity
+        self.head = 0
+        self.tail = 0
+        self.size = 0
+
+    def enqueue(self, item):
+        self.data[self.tail] = item
+        self.tail = (self.tail + 1) % self.capacity
+        self.size += 1
+        if self.size == self.capacity:
+            self._enlarge()
+
+    def dequeue(self):
+        if self.size == 0:
+            raise ValueError("Queue is empty")
+        item = self.data[self.head]
+        self.head = (self.head + 1) % self.capacity
+        self.size -= 1
+        return item
+
+    def __getitem__(self, index: Union[int, slice]):
+        """random access"""
+        if isinstance(index, int):
+            if index < 0:
+                index += self.size
+            if index < 0 or index >= self.size:
+                raise IndexError("Index out of range")
+            return self.data[(self.head + index) % self.capacity]
+        elif isinstance(index, slice):
+            start = index.start or 0
+            stop = index.stop or self.size
+            step = index.step or 1
+            return [self[i] for i in range(start, stop, step)]
+        else:
+            raise TypeError("Index must be an integer or a slice")
+
+    def _enlarge(self):
+        new_capacity = self.capacity * 2
+        new_data = [None] * new_capacity
+        for i in range(self.size):
+            new_data[i] = self.data[(self.head + i) % self.capacity]
+        self.data = new_data
+        self.head = 0
+        self.tail = self.size
+        self.capacity = new_capacity
+
+    def __len__(self):
+        return self.size
+
 
 class Packet:
     def __init__(
@@ -48,17 +104,17 @@ class Packet:
 class Encoder:
     def __init__(self, repfreq: int):
         self.repfreq = repfreq
-        self.srcpkt: list[bytes] = []
+        self.srcpkt = Queue()
         self.nextsid: int = 0
         self.acksid: int = -1
         self.rcount: int = -1
 
     def enqueue(self, data: bytes):
-        self.srcpkt.append(data)
+        self.srcpkt.enqueue(data)
 
     def generate_packet(self) -> Packet:
         all_acked: bool = self.acksid + 1 == self.nextsid
-        all_sent: bool = self.nextsid == len(self.srcpkt)
+        all_sent: bool = self.nextsid - self.acksid - 1 == len(self.srcpkt)
 
         if all_acked:
             pkt = self._output_source_packet(self.nextsid)
@@ -72,17 +128,19 @@ class Encoder:
         return pkt
 
     def _output_source_packet(self, sourceid: int) -> Packet:
-        syms = GF(list(self.srcpkt[sourceid]))
+        syms = GF(list(self.srcpkt[sourceid - self.acksid - 1]))
         return Packet(sourceid, -1, -1, -1, None, syms)
 
     def _output_repair_packet(self, repairid, win_s, win_e) -> Packet:
         coes = GF.Random(win_e-win_s, seed=repairid).reshape(1, -1)
-        syms_all = GF([list(row) for row in self.srcpkt[win_s:win_e]])
+        syms_all = GF([list(row) for row in self.srcpkt[:(win_e - win_s)]])
         syms = coes @ syms_all
         return Packet(-1, repairid, win_s, win_e, coes, syms)
 
     def flush_acked_packets(self, acksid: int) -> None:
         if acksid > self.acksid:
+            for _ in range(acksid - self.acksid):
+                self.srcpkt.dequeue()
             self.acksid = acksid
 
 
