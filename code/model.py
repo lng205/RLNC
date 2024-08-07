@@ -64,10 +64,10 @@ class Packet:
         self,
         sourceid: int,
         repairid: int,
-        win_s: int,
-        win_e: int,
-        coes: galois.FieldArray,
-        syms: galois.FieldArray
+        win_s: int = 0,
+        win_e: int = 0,
+        coes: galois.FieldArray = GF([]),
+        syms: galois.FieldArray = GF([])
     ):
         self.sourceid = sourceid
         self.repairid = repairid
@@ -113,13 +113,10 @@ class Encoder:
         self.srcpkt.enqueue(data)
 
     def generate_packet(self) -> Packet:
-        all_acked: bool = self.acksid + 1 == self.nextsid
-        all_sent: bool = self.nextsid - self.acksid - 1 == len(self.srcpkt)
-
-        if all_acked:
+        if self.all_acked():
             pkt = self._output_source_packet(self.nextsid)
             self.nextsid += 1
-        elif random.random() < self.repfreq or all_sent:
+        elif random.random() < self.repfreq or self.all_sent():
             self.rcount += 1
             pkt = self._output_repair_packet(self.rcount, self.acksid + 1, self.nextsid)
         else:
@@ -142,6 +139,12 @@ class Encoder:
             for _ in range(acksid - self.acksid):
                 self.srcpkt.dequeue()
             self.acksid = acksid
+
+    def all_acked(self) -> bool:
+        return self.acksid + 1 == self.nextsid
+
+    def all_sent(self) -> bool:
+        return self.nextsid - self.acksid - 1 == len(self.srcpkt)
 
 
 class Decoder:
