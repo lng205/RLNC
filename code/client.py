@@ -16,13 +16,13 @@ class Client:
         """Receive packets from the server."""
         while True:
             data, server_address = self.sock.recvfrom(MTU)
-            if data:
-                pkt = Packet.deserialize(data)
-                print(f"Received packet from {server_address}")
-                self.decoder.receive_packet(pkt)
-                self.send_ack(server_address)
-            else:
+            pkt = Packet.deserialize(data)
+            if pkt.sourceid == -2:
+                print(f"Received end signal from {server_address}")
                 break
+            print(f"Received packet from {server_address}")
+            self.decoder.receive_packet(pkt)
+            self.send_ack(server_address)
         with open(self.file_path, 'wb') as file:
             for data in self.decoder.recovered:
                 file.write(data.tobytes())

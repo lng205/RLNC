@@ -37,7 +37,7 @@ class Server:
         while not (ec.all_sent() and ec.all_acked()):
             pkt = ec.generate_packet()
             self.sock.sendto(pkt.serialize(), client_address)
-        self.sock.sendto(b'', client_address)
+        self.sock.sendto(Packet(-2, 0).serialize(), client_address)
 
     def receive_ack(self):
         """Receive acks from the client."""
